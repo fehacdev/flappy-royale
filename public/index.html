@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Flappy Royale</title>
+  <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      overflow: hidden;
+      background-color: #020408;
+    }
+
+    #game {
+      border: 3px solid white;
+    }
+  </style>
+</head>
+
+<body style="display: flex; justify-content:center; align-items:center; width: 100vw; height: 100vh;">
+  <canvas id="game" width="432" height="768"></canvas>
+  <script src="/socket.io/socket.io.js"></script>
+  <script type="module">
+    import renderScreen from './renderer.js'
+    import createGame from './game.js'
+    import createInputHandler from './input-handler.js'
+
+    const gameCanvas = document.getElementById("game");
+    const screen = gameCanvas.getContext("2d");
+    const game = createGame(gameCanvas.width, gameCanvas.height)
+    const inputHandler = createInputHandler()
+
+    renderScreen(screen, gameCanvas, game, requestAnimationFrame)
+
+    const socket = io()
+
+    socket.on('connect', () => {
+      game.setLocalPlayerId(socket.id)
+      inputHandler.registerPlayerId(socket.id)
+      inputHandler.subscribe(() => {
+        socket.emit('doFlap')
+      })
+    })
+
+    socket.on('updateState', (state) => {
+      game.updateState(state)
+    })
+
+    socket.on('reconnect', () => {
+      socket.disconnect()
+      socket.connect()
+    })
+  </script>
+</body>
+
+</html>
